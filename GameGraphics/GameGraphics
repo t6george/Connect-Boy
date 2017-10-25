@@ -1,0 +1,220 @@
+#include <Adafruit_GFX.h>    // Core graphics library
+#include <Adafruit_ST7735.h> // Hardware-specific library
+#include <SPI.h>
+#include <SD.h>
+
+#include <Fonts/FreeSerif9pt7b.h>
+#include <Fonts/FreeSerifBold9pt7b.h>
+#include <Fonts/FreeMono9pt7b.h>
+#include <Fonts/FreeMonoBold12pt7b.h>
+
+// TFT display and SD card will share the hardware SPI interface.
+// Hardware SPI pins are specific to the Arduino board type and
+// cannot be remapped to alternate pins.  For Arduino Uno,
+// Duemilanove, etc., pin 11 = MOSI, pin 12 = MISO, pin 13 = SCK.
+#define TFT_CS  10  // Chip select line for TFT display
+#define TFT_RST  9  // Reset line for TFT (or see below...)
+#define TFT_DC   8  // Data/command line for TFT
+
+#define SD_CS    4  // Chip select line for SD card
+
+#define TFT_CS     10
+#define TFT_RST    9  //reset
+#define TFT_DC     8
+
+#define BUFFPIXEL 20
+
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+
+//Variables
+uint16_t colorarray[8]={ST7735_WHITE,ST7735_BLACK,ST7735_RED,ST7735_GREEN,ST7735_BLUE,ST7735_YELLOW,ST7735_MAGENTA};
+int colorcounter = 0;
+bool intro = true;
+bool ingame = true;
+
+void drawtext(int x,int y,String text, uint16_t color) {
+      tft.setCursor(x,y);
+      tft.setTextColor(color);
+      tft.setTextWrap(true);
+      tft.print(text);
+    }
+
+    void drawfillrects(int x, int y, int w, int h, uint16_t color, bool center_x,bool center_y) {
+      if (center_x){
+        x = tft.width()/2-w/2;
+        }
+      if (center_y){
+        y = tft.height()/2 - h/2;
+      }
+      tft.fillRect(x,y,w,h,color);
+    }
+
+void drawborderrects(int x, int y, int w, int h, uint16_t color, bool center_x,bool center_y) {
+  //tft.fillScreen(ST7735_BLACK);
+  if (center_x){
+    x = tft.width()/2-w/2;
+    }
+  if (center_y){
+    y = tft.height()/2 - h/2;
+  }
+  tft.drawRect(x,y,w,h,color);
+  //tft.drawRect(tft.width()/2 -x/2, tft.height()/2 -x/2 , x, x, color1);
+}
+void bmpDraw(char *filename, uint8_t x, uint8_t y) {
+
+  File     bmpFile;
+  int      bmpWidth, bmpHeight;   // W+H in pixels
+  uint8_t  bmpDepth;              // Bit depth (currently must be 24)
+  uint32_t bmpImageoffset;        // Start of image data in file
+  uint32_t rowSize;               // Not always = bmpWidth; may have padding
+  uint8_t  sdbuffer[3*BUFFPIXEL]; // pixel buffer (R+G+B per pixel)
+  uint8_t  buffidx = sizeof(sdbuffer); // Current position in sdbuffer
+  boolean  goodBmp = false;       // Set to true on valid header parse
+  boolean  flip    = true;        // BMP is stored bottom-to-top
+  int      w, h, row, col;
+  uint8_t  r, g, b;
+  uint32_t pos = 0, startTime = millis();
+
+  if((x >= tft.width()) || (y >= tft.height())) return;
+
+  Serial.println();
+  Serial.print("Loading image '");
+  Serial.print(filename);
+  Serial.println('\'');
+
+  // Open requested file on SD card
+  if ((bmpFile = SD.open(filename)) == NULL) {
+    Serial.print("File not found");
+    return;
+  }
+
+  // Parse BMP header
+  if(read16(bmpFile) == 0x4D42) { // BMP signature
+    Serial.print("File size: "); Serial.println(read32(bmpFile));
+    (void)read32(bmpFile); // Read & ignore creator bytes
+    bmpImageoffset = read32(bmpFile); // Start of image data
+    Serial.print("Image Offset: "); Serial.println(bmpImageoffset, DEC);
+    // Read DIB header
+    Serial.print("Header size: "); Serial.println(read32(bmpFile));
+    bmpWidth  = read32(bmpFile);
+    bmpHeight = read32(bmpFile);
+    if(read16(bmpFile) == 1) { // # planes -- must be '1'
+      bmpDepth = read16(bmpFile); // bits per pixel
+      Serial.print("Bit Depth: "); Serial.println(bmpDepth);
+      if((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
+
+        goodBmp = true; // Supported BMP format -- proceed!
+        Serial.print("Image size: ");
+        Serial.print(bmpWidth);
+        Serial.print('x');
+        Serial.println(bmpHeight);
+
+        // BMP rows are padded (if needed) to 4-byte boundary
+        rowSize = (bmpWidth * 3 + 3) & ~3;
+
+        // If bmpHeight is negative, image is in top-down order.
+        // This is not canon but has been observed in the wild.
+        if(bmpHeight < 0) {
+          bmpHeight = -bmpHeight;
+          flip      = false;
+        }
+
+        // Crop area to be loaded
+        w = bmpWidth;
+        h = bmpHeight;
+        if((x+w-1) >= tft.width())  w = tft.width()  - x;
+        if((y+h-1) >= tft.height()) h = tft.height() - y;
+
+        // Set TFT address window to clipped image bounds
+        tft.setAddrWindow(x, y, x+w-1, y+h-1);
+
+        for (row=0; row<h; row++) { // For each scanline...
+
+          if(flip) // Bitmap is stored bottom-to-top order (normal BMP)
+            pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
+          else     // Bitmap is stored top-to-bottom
+            pos = bmpImageoffset + row * rowSize;
+          if(bmpFile.position() != pos) { // Need seek?
+            bmpFile.seek(pos);
+            buffidx = sizeof(sdbuffer); // Force buffer reload
+          }
+
+          for (col=0; col<w; col++) { // For each pixel...
+            // Time to read more pixel data?
+            if (buffidx >= sizeof(sdbuffer)) { // Indeed
+              bmpFile.read(sdbuffer, sizeof(sdbuffer));
+              buffidx = 0; // Set index to beginning
+            }
+
+            // Convert pixel from BMP to TFT format, push to display
+            b = sdbuffer[buffidx++];
+            g = sdbuffer[buffidx++];
+            r = sdbuffer[buffidx++];
+            tft.pushColor(tft.Color565(r,g,b));
+          } // end pixel
+        } // end scanline
+        Serial.print("Loaded in ");
+        Serial.print(millis() - startTime);
+        Serial.println(" ms");
+      } // end goodBmp
+    }
+  }
+
+  bmpFile.close();
+  if(!goodBmp) Serial.println("BMP format not recognized.");
+}
+
+// These read 16- and 32-bit types from the SD card file.
+// BMP data is stored little-endian, Arduino is little-endian too.
+// May need to reverse subscript order if porting elsewhere.
+
+uint16_t read16(File f) {
+  uint16_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read(); // MSB
+  return result;
+}
+
+uint32_t read32(File f) {
+  uint32_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read();
+  ((uint8_t *)&result)[2] = f.read();
+  ((uint8_t *)&result)[3] = f.read(); // MSB
+  return result;
+}
+
+void setup(void) {
+  Serial.begin(9600);
+  tft.initR(INITR_BLACKTAB);
+  
+  Serial.print("Initializing SD card...");
+  if (!SD.begin(SD_CS)) {
+    Serial.println("failed!");
+    return;
+  }
+  Serial.println("OK!");
+
+}
+
+void introscreen(){
+  tft.setFont(&FreeMonoBold12pt7b);
+  drawtext(3,27,"CONNECT",ST7735_RED);
+  tft.setFont(&FreeMono9pt7b);
+  drawtext(40,127,"PLAY!",colorarray[colorcounter%7]);
+  drawtext(36,149,"LEVEL",colorarray[(colorcounter+1)%7]);
+  colorcounter+=1;
+  }
+
+void loop() {
+  bmpDraw("introbg.bmp", 0, 0);
+  while (intro){
+    introscreen();
+    delay(75);
+    }
+}
+
+//Increasing the buffer
+// size takes more of the Arduino's precious RAM but
+// makes loading a little faster.  20 pixels seems a
+// good balance.
