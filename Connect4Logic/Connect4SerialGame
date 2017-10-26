@@ -49,11 +49,11 @@ void loop() {
       Serial.println("No space in that column!");
       drawBoard(board);
     } else {
-      if (whosTurn(turnCheck) ==2) {
-        lastMoveRow = addTile(board, AI(board,whosTurn(turnCheck)), whosTurn(turnCheck)); //actually add the move and keep track of the row the tile ended up in
-      } else {
+//      if (whosTurn(turnCheck) ==2) {
+//        lastMoveRow = addTile(board, AI(board,whosTurn(turnCheck)), whosTurn(turnCheck)); //actually add the move and keep track of the row the tile ended up in
+//      } else {
         lastMoveRow = addTile(board, findChoice(choices), whosTurn(turnCheck)); //actually add the move and keep track of the row the tile ended up in
-      }
+//      }
       drawBoard(board);
       if (winCheck(board, lastMoveRow, findChoice(choices))) { //check if someone wins
         winner = turnCheck%2+1;
