@@ -1,0 +1,59 @@
+/*
+ * AI
+ * Recursively chooses the column choice of the AI
+ * @param board, the current board state
+ * @param player, the current player's turn
+ * @return int value of the col number
+*/
+int AI(int testBoard[6][7], int turnCheck, int scores[7]) { 
+  scores = {0};
+  int bestCol = negamax(2, turnCheck, testBoard, scores);
+//  Serial.print("bestCol is ");
+//  Serial.println(bestCol);
+  int best = -100;
+  for (int i=0;i<7;i++) {
+    Serial.print(scores[i]);
+    Serial.print(" ");
+    if (scores[i] >=best) {
+      best = scores[i];
+      bestCol = i;
+    }
+  }
+
+  return bestCol;
+}
+
+int negamax(int depth, int globalTurns, int testBoard[6][7], int scores[7]) {
+  int innerTurn = globalTurns;
+  int row=0;
+  if (depth ==0) {
+    return 0;
+  }
+  if (innerTurn == 42) {
+    return 0;
+  }
+
+//  Serial.print("here");
+  for (int i =0;i<7;i++) {
+    if (spaceForTile(testBoard,i)) {
+      row = addTile(testBoard, i, whosTurn(innerTurn));
+      if (winCheck(testBoard, row, i)) {
+        testBoard[row][i] = 0;
+        scores[i]= (42-innerTurn)/2;
+      }
+      testBoard[row][i] = 0;
+    }
+  }
+  int col=0;
+
+  for (int i =0;i<7;i++) {
+    if (spaceForTile(testBoard,i)) {
+      row = addTile(testBoard, i, whosTurn(innerTurn));
+      value = -negamax(depth-1, innerTurn+1, testBoard, scores);
+      testBoard[row][i] = 0;
+    }
+  }
+
+  return col;
+
+}
