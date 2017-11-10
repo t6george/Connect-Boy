@@ -210,7 +210,6 @@ void drawBoard() {
   for (int i=0; i<6; i++) {
     for (int j=0; j<7;j++) {
       Serial.print(board[i][j]);
-      Serial.print(board[0][0]);
       Serial.print(" ");
     }
     Serial.println("");
@@ -228,8 +227,6 @@ void drawBoard() {
 void(* resetFunc) (void) = 0;
 
 void toStart1(int row, int col) { //top left to bottom right
-    Serial.print(board[0][0]);
-    Serial.print("FUCK");
   whereToStart[0] = 0;
   whereToStart[1] = 0;
   int a = col-row;
@@ -314,7 +311,6 @@ boolean winCheck(int row, int col) {
     }
   }
   //diag 1 check
-  Serial.print("cunt");
   toStart1(row,col);
   consecCount = 0;
   for (int i=whereToStart[0]; i<5;i++) { //rows are the limiting factor
@@ -370,8 +366,6 @@ boolean winCheck(int row, int col) {
     }
     whereToStart[1]--;
   }
-  
-  Serial.print("bitch");
   return false;
 }
 
@@ -464,10 +458,6 @@ void introScreen(){
 
 void gamePlay(int sel){
   int placed_row = userMove(sel,globalturn);
-  
-    Serial.print(board[0][0]);
-    Serial.print("FUCK");
-  Serial.print("bitch");
     if (winCheck(placed_row,sel)){
     
     //Serial.print(board[0][0]);
