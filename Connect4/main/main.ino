@@ -210,13 +210,13 @@ void drawBoard() {
   for (int i=0; i<6; i++) {
     for (int j=0; j<7;j++) {
       Serial.print(board[i][j]);
+      Serial.print(board[0][0]);
       Serial.print(" ");
     }
     Serial.println("");
   }
   Serial.println("");
 }
-
 //Connect 4 Functions
   /*
  * toStart1
@@ -228,11 +228,15 @@ void drawBoard() {
 void(* resetFunc) (void) = 0;
 
 void toStart1(int row, int col) { //top left to bottom right
-  whereToStart[2] = {0};
+    Serial.print(board[0][0]);
+    Serial.print("FUCK");
+  whereToStart[0] = 0;
+  whereToStart[1] = 0;
   int a = col-row;
   if (a>=0) {
     whereToStart[0] = 0;
     whereToStart[1] = a;
+    
   } else {
     whereToStart[0] = -1*a;
     whereToStart[1] = 0;
@@ -245,7 +249,8 @@ void toStart1(int row, int col) { //top left to bottom right
  * @param col, col number
 */
 void toStart2(int row, int col) { //top right to bottom right
-  whereToStart[2] = {0};
+  whereToStart[0] = 0;
+  whereToStart[1] = 0;
   int a = col+ row;
   if (a>6) {
     whereToStart[0] = a-6;
@@ -257,6 +262,7 @@ void toStart2(int row, int col) { //top right to bottom right
 }
 
 boolean winCheck(int row, int col) {
+  
   int consecCount = 0;
   //hori check
   for (int i = 0; i<6;i++) { // counts consecutive values horizontally in given row
@@ -308,9 +314,10 @@ boolean winCheck(int row, int col) {
     }
   }
   //diag 1 check
+  Serial.print("cunt");
   toStart1(row,col);
   consecCount = 0;
-  for (int i=whereToStart[0]; i<5;i++) { //rows are the limiting factor 
+  for (int i=whereToStart[0]; i<5;i++) { //rows are the limiting factor
     // this if checks consecutive-ness, if the value is a player tile, and that the column number doesnt go out of range
     if (board[i][whereToStart[1]] == board[i+1][whereToStart[1]+1] && (board[i][whereToStart[1]]==1 || board[i][whereToStart[1]]==2) && whereToStart[1]<6) {
       consecCount++;
@@ -363,6 +370,8 @@ boolean winCheck(int row, int col) {
     }
     whereToStart[1]--;
   }
+  
+  Serial.print("bitch");
   return false;
 }
 
@@ -382,7 +391,6 @@ bool space(int select){
   }
   
 int userMove(int selection, int playerTurn){
-  
   if(space(selection)){
     int row = 0;
     for (row; row<6; row++) { // from the top to the bottom
@@ -454,12 +462,19 @@ void introScreen(){
   colorcounter+=1;
   }
 
-void (int sel){
+void gamePlay(int sel){
   int placed_row = userMove(sel,globalturn);
+  
+    Serial.print(board[0][0]);
+    Serial.print("FUCK");
+  Serial.print("bitch");
     if (winCheck(placed_row,sel)){
+    
+    //Serial.print(board[0][0]);
       ingame = false;
       }
     //call ai
+    
   }
 
 void loop() {
