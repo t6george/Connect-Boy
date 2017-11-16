@@ -412,7 +412,7 @@ void loop() {
       rightButtonState = digitalRead(rightButton);
       downButtonState = digitalRead(downButton);
       
-      tft.drawTriangle(col_pixels[choice]-6, 10, col_pixels[choice], 22, col_pixels[choice]+6, 10, ST7735_WHITE); //adjacent integers are coordinates for each point on triangle
+      tft.fillTriangle(col_pixels[choice]-6, 10, col_pixels[choice], 22, col_pixels[choice]+6, 10, ST7735_WHITE); //adjacent integers are coordinates for each point on triangle
       
       if (selectButtonState == HIGH){
         tone(Speaker,NOTE_A4,300);
@@ -422,13 +422,13 @@ void loop() {
         }
         
       else if (leftButtonState == HIGH){
-        tft.drawTriangle(col_pixels[choice]-6, 10, col_pixels[choice], 22, col_pixels[choice]+6, 10, ST7735_BLACK);
+        tft.fillTriangle(col_pixels[choice]-6, 10, col_pixels[choice], 22, col_pixels[choice]+6, 10, ST7735_BLACK);
         if (choice == 0)choice = 6;
         else choice--;
         delay(50);
         }
       else if (rightButtonState == HIGH){
-        tft.drawTriangle(col_pixels[choice]-6, 10, col_pixels[choice], 22, col_pixels[choice]+6, 10, ST7735_BLACK);
+        tft.fillTriangle(col_pixels[choice]-6, 10, col_pixels[choice], 22, col_pixels[choice]+6, 10, ST7735_BLACK);
         if (choice == 6)choice = 0;
         else choice++;
         delay(50);
