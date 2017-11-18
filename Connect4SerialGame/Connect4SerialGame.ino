@@ -95,12 +95,12 @@ void loop() {
  * @param player, the current player's turn
  * @return int value of the col number
 */
-int AI(int board[6][7], int turnCheck) { //
-  int maximum = 0;
+int AI() { //
+  int maximum = -42;
   int value = 0;
   int bestCol = 0;
   for (int i=0;i<7;i++) {
-    value = negamax(3, turnCheck, board);
+    value = negamax(3, turnCheck);
     if (value >maximum) {
       maximum = value;
       bestCol = i;
@@ -108,11 +108,10 @@ int AI(int board[6][7], int turnCheck) { //
   }
   return bestCol;
 }
-
-int negamax(int depth, int turnCheck, int board[6][7]) {
-  int innerTurn = turnCheck;
+int negamax(int depth, int turns) {
+  int innerTurn = turns;
   int row = 0;
-  if (depth ==0) {
+  if (depth == 0) {
     return 0;
   }
   if (innerTurn == 42) {
@@ -136,7 +135,7 @@ int negamax(int depth, int turnCheck, int board[6][7]) {
   for (int i =0;i<7;i++) {
     if (spaceForTile(board,i)) {
       row = addTile(board, i, whosTurn(innerTurn));
-      int score = -1*negamax(depth-1, innerTurn,board);
+      int score = -1*negamax(depth-1, innerTurn+1);
       board[row][i] = 0;
       if (score>bestScore) {
         bestScore = score;
@@ -315,7 +314,8 @@ boolean winCheck(int board[6][7], int row, int col) {
  * @param col, col number
 */
 void toStart1(int row, int col) { //top left to bottom right
-  whereToStart[2] = {0};
+  whereToStart[0] = 0;
+  whereToStart[1] = 0;
   int a = col-row;
   if (a>=0) {
     whereToStart[0] = 0;
@@ -333,7 +333,8 @@ void toStart1(int row, int col) { //top left to bottom right
  * @param col, col number
 */
 void toStart2(int row, int col) { //top right to bottom right
-  whereToStart[2] = {0};
+  whereToStart[0] = 0;
+  whereToStart[1] = 0;
   int a = col+ row;
   if (a>6) {
     whereToStart[0] = a-6;

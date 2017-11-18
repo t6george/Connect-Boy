@@ -27,6 +27,7 @@
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 ////////Variables
+int depth = 1;
 uint16_t colorarray[8]={ST7735_BLACK,ST7735_GREEN,ST7735_BLUE,ST7735_MAGENTA,ST7735_WHITE,ST7735_YELLOW,ST7735_RED};
 int whereToStart[2];
 int row_pixels[6] = {38,56,73,91,108,125}; //coordinates of each rock and column on display (in pixels)
@@ -189,8 +190,25 @@ void drawBoard() {
 
 void(* resetFunc) (void) = 0;
 
+void drawBoard() {
+  Serial.println("");
+  for (int i=0;i<13;i++) {
+    Serial.print("_");
+  }
+  Serial.println("");
+  for (int i=0; i<6; i++) {
+    for (int j=0; j<7;j++) {
+      Serial.print(board[i][j]);
+      Serial.print(" ");
+    }
+    Serial.println("");
+  }
+  Serial.println("");
+}
+
 void toStart1(int row, int col) { //top left to bottom right
-  whereToStart[2] = {0};
+  whereToStart[0] = 0;
+  whereToStart[1] = 0;
   int a = col-row;
   if (a>=0) {
     whereToStart[0] = 0;
@@ -207,7 +225,8 @@ void toStart1(int row, int col) { //top left to bottom right
  * @param col, col number
 */
 void toStart2(int row, int col) { //top right to bottom right
-  whereToStart[2] = {0};
+  whereToStart[0] = 0;
+  whereToStart[1] = 0;
   int a = col+ row;
   if (a>6) {
     whereToStart[0] = a-6;
@@ -218,6 +237,64 @@ void toStart2(int row, int col) { //top right to bottom right
   }
 }
 
+boolean winCheckNoPrint(int row, int col) {
+  int consecCount = 0;
+  //hori check
+  for (int i = 0; i<6;i++) { // counts consecutive values horizontally in given row
+    if (board[row][i] == board[row][i+1] && (board[row][i] ==1 || board[row][i] == 2)) {
+      consecCount++;
+      if (consecCount==3) {
+        return true;
+      }
+    } else {
+      consecCount = 0;
+    }
+  }
+  //verti check
+  consecCount = 0;
+  for (int i =0; i<5;i++) { // counts consecutive values vertically in the given col
+    if (board[i][col] == board[i+1][col] && (board[i][col] ==1 || board[i][col] == 2)) {
+      consecCount++;
+      if (consecCount==3) {
+        return true;
+      }
+    } else {
+      consecCount = 0;
+    }
+  }
+  //diag 1 check
+  toStart1(row,col);
+  consecCount = 0;
+  for (int i=whereToStart[0]; i<5;i++) { //rows are the limiting factor 
+    // this if checks consecutive-ness, if the value is a player tile, and that the column number doesnt go out of range
+    if (board[i][whereToStart[1]] == board[i+1][whereToStart[1]+1] && (board[i][whereToStart[1]]==1 || board[i][whereToStart[1]]==2) && whereToStart[1]<6) {
+      consecCount++;
+      if (consecCount==3) {
+        return true;
+      }
+    } else {
+      consecCount = 0;
+    }
+    whereToStart[1]++;
+  }
+  //diag 2 check
+  toStart2(row,col);
+  consecCount = 0;
+  for (int i=whereToStart[0]; i<5;i++) { //rows are the limiting factor 
+    // this if checks consecutive-ness, if the value is a player tile, and that the column number doesnt go out of range
+    if (board[i][whereToStart[1]] == board[i+1][whereToStart[1]-1] && (board[i][whereToStart[1]]==1 || board[i][whereToStart[1]]==2) && whereToStart[1] >0) {
+      consecCount++;
+      if (consecCount==3) {
+        return true;
+      }
+    } else {
+      consecCount = 0;
+    }
+    whereToStart[1]--;
+  }
+  return false;
+}
+/////////////////////////////////////////////////////////////////////////////////
 boolean winCheck(int row, int col) {
   int consecCount = 0;
   int colorcount = 0;
@@ -334,22 +411,23 @@ boolean winCheck(int row, int col) {
  * @param playerTurn, current player's turn
  * @return int value of the row number that it was placed
 */
-bool space(int select){
-  if(board[0][select]!=0){
-       return false;
+int space(int select){ //returns first empty col in row. -1 for full
+  for(int i = 5; i >= 0; i--){
+    if(board[i][select] == 0){
+      return i;
     }
-  return true;
   }
+  return -1;
+}
   
 int userMove(int selection, int playerTurn){
-  
-  if(space(selection)){
+  if(space(selection) != -1){
     int row = 0;
     for (row; row<6; row++) { // from the top to the bottom
       if (row == 5){
           board[5][selection] = 2-playerTurn%2;
           break;
-          }
+      }
       else if (board[row+1][selection] != 0){
           board[row][selection] = 2-playerTurn%2;
           break;
@@ -361,9 +439,70 @@ int userMove(int selection, int playerTurn){
       
     }
     tft.fillCircle(col_pixels[selection],row_pixels[row], 6,colorarray[5+playerTurn%2]);
-    //drawBoard();
+    
     return row;
   }
+  return -1;
+}
+
+int AI() {
+  int maximum = -42;
+  int score = 0;
+  int bestCol = 0;
+  int row = -1;
+  for (int i=0;i<7;i++) {
+    row = space(i);
+    if(row != -1){
+      board[row][i] = 2;
+      if(winCheckNoPrint(row,i)){
+        return i;
+      }
+      score = negamax(depth, globalturn+1);
+      board[row][i] = 0;
+      if (score >maximum) {
+        maximum = score;
+        bestCol = i;
+      }
+    }
+  }
+  board[space(bestCol)][bestCol] = 2;
+  drawBoard();
+  return bestCol;
+}
+
+int negamax(int d, int turns) {
+  int row = 0;
+  if (d == 0){return 0;}
+  if (turns == 42)return 0;
+  
+  for (int i = 0;i < 7;i++) {
+    row = space(i);
+    if (row != -1){
+      board[row][i] = 2-(turns)%2;
+      if (winCheckNoPrint(row, i)) {
+        //drawBoard();
+        board[row][i] = 0;
+        return -(43-turns)/2;
+      }
+      board[row][i] = 0;
+    }
+  }
+
+  int bestScore = -42;
+  int score =-42;
+
+  for (int i =0;i<7;i++) {
+    row = space(i);
+    if(row != -1){
+      board[row][i] = 2-(turns)%2;
+      score = -negamax(d-1, turns+1);
+      board[row][i] = 0;
+      if (score>bestScore) {
+        bestScore = score;
+      }
+    }
+  }
+  return bestScore; 
 }
 
 void setup(void) {
@@ -385,11 +524,22 @@ void introScreen(){
 
 void gamePlay(int sel){
   int placed_row = userMove(sel,globalturn);
+  if(placed_row != -1){
+    globalturn++;
     if (winCheck(placed_row,sel)){
       ingame = false;
-      }
+      return;
+    }
     //call ai
+    sel = AI();
+    globalturn++;
+    if (winCheck(space(sel),sel)){
+      ingame = false;
+      return;
+    }
   }
+  return;
+}
 
 void loop() {
   bmpDraw("introbg.bmp", 0, 0);
@@ -417,7 +567,6 @@ void loop() {
       if (selectButtonState == HIGH){
         tone(Speaker,NOTE_A4,300);
         gamePlay(choice);
-        globalturn++;
         delay(50);
         }
         
