@@ -432,6 +432,7 @@ int AI() {
     random_choice = random(2 - boundary % 3, 4 + boundary % 3); //forces random value to first check rows 3-5(A) then 2-6(B) then 1-7(C), in a repeating fashion (ABCABCABC...)
     boundary++;
   } while (scores[random_choice] == -42); //doesn't consider 'removed' values
+  timer = 0;
   return random_choice;
 }
 
@@ -686,7 +687,7 @@ void loop() {
         }
       button_delay = 4;//same logic as above
       }
-      delay(50);
+      delay(44);
     }
   }
   
@@ -701,19 +702,6 @@ void loop() {
       leftButtonState = digitalRead(leftButton);
       rightButtonState = digitalRead(rightButton);
 
-      if (button_delay > 0) button_delay--;
-        if(isTimeLimit){
-          if (timer % 20 == 0) {
-            width = 80 - 80 * timer / time_limit;
-            tft.fillRect(40 + width, 140, 80 - width, 13, colorarray[5]);
-            tft.fillRect(40, 140, width, 13, colorarray[6]);
-          }
-      if (timer == time_limit) {
-        randomSeed(analogRead(A2));
-        gamePlay(random(0, 6));
-        timer = 0;
-      }
-      
       tft.fillTriangle(col_pixels[choice] - 6, 10, col_pixels[choice], 22, col_pixels[choice] + 6, 10, ST7735_WHITE); //adjacent integers are coordinates for each point on triangle ~ choice triangle
 
       if (selectButtonState == HIGH && !button_delay) {
@@ -740,6 +728,19 @@ void loop() {
       inGameMusicIndex++;
       if (inGameMusicIndex == 98) { //loops music
         inGameMusicIndex = 0;
+      }
+
+      if (button_delay > 0) button_delay--;
+      if(isTimeLimit){
+        if (timer % 20 == 0) {
+          width = 80 - 80 * timer / time_limit;
+          tft.fillRect(40 + width, 140, 80 - width, 13, colorarray[5]);
+          tft.fillRect(40, 140, width, 13, colorarray[6]);
+        }
+      if (timer == time_limit) {
+        randomSeed(analogRead(A2));
+        gamePlay(random(0, 6));
+        timer = 0;
       }
       timer++;
       }
