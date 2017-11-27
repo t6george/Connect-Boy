@@ -620,12 +620,12 @@ void loop() {
     else if (downButtonState == HIGH && !button_delay) { //going down an option
       tft.drawRect(27, 111, 74, 22, colorarray[5]);
       options_state++;
-      button_delay = 4; //game waits 4 delays of 30 milliseconds before letting you press another button
+      button_delay = 7; //game waits 4 delays of 30 milliseconds before letting you press another button
     }
     else if (upButtonState == HIGH && !button_delay) { //going up an option
       tft.drawRect(27, 134, 74, 22, colorarray[5]);
       options_state--;
-      button_delay = 4;//game waits 4 delays of 30 milliseconds before letting you press another button
+      button_delay = 7;//game waits 4 delays of 30 milliseconds before letting you press another button
     }
     delay(30);
   }
@@ -668,7 +668,7 @@ void loop() {
           drawtext(105, 70, (String)(depth-1), colorarray[1]);
           if(depth == 2)bmpDraw("ballg.bmp", 85, 114); 
         }
-        button_delay = 4; //same logic as above
+        button_delay = 6; //same logic as above
       }
 
       else if (downButtonState == HIGH && !button_delay) {
@@ -677,7 +677,7 @@ void loop() {
         }else{
           settings_state++;
         }
-        button_delay = 4;//same logic as above
+        button_delay = 6;//same logic as above
       }
       else if (upButtonState == HIGH && !button_delay) {
         if (settings_state == 0){
@@ -685,7 +685,7 @@ void loop() {
           }else{ 
         settings_state--;
         }
-      button_delay = 4;//same logic as above
+      button_delay = 6;//same logic as above
       }
       delay(44);
     }
@@ -706,20 +706,20 @@ void loop() {
 
       if (selectButtonState == HIGH && !button_delay) {
         gamePlay(choice); //does each player's move, checks for wins and ties
-        button_delay = 3;
+        button_delay = 5;
       }
 
       else if (leftButtonState == HIGH && !button_delay) { //move left
         tft.fillTriangle(col_pixels[choice] - 6, 10, col_pixels[choice], 22, col_pixels[choice] + 6, 10, ST7735_BLACK);
         if (choice == 0)choice = 6;
         else choice--;
-        button_delay = 3;
+        button_delay = 5;
       }
       else if (rightButtonState == HIGH && !button_delay) { //move right
         tft.fillTriangle(col_pixels[choice] - 6, 10, col_pixels[choice], 22, col_pixels[choice] + 6, 10, ST7735_BLACK);
         if (choice == 6)choice = 0;
         else choice++;
-        button_delay = 3;
+        button_delay = 5;
       }
 
       //music goes here
